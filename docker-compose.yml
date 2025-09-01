@@ -67,19 +67,28 @@ services:
       - traefik.http.routers.webapp-https.rule=Host(`fantacytype.top`)
       - "com.centurylinklabs.watchtower.enable=true"
 
-  # websocket:
-  #   image: websocket:v1.0
-  #   container_name: websocket_server
-  #   pull_policy: never
-  #   ports:
-  #     - "9000:9000"
-  #   environment:
-  #     - PORT=9000
-  #     # Add any other environment variables your app needs
-  #   restart: unless-stopped
-  #   # If you need to connect to other services like a database, add them here
-  #   networks:
-  #     - frontend 
+  websocket:
+    image: websocket:v1.0
+    container_name: websocket_server
+    pull_policy: never
+    ports:
+      - "9000:9000"
+    environment:
+      - PORT=9000
+      # Add any other environment variables your app needs
+    restart: unless-stopped
+    # If you need to connect to other services like a database, add them here
+    networks:
+      - frontend 
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.websocket.rule=Host(`ws.fantacytype.top`)
+      - traefik.http.routers.websocket.entrypoints=web
+      - traefik.http.routers.websocket-secure.tls=true
+      - traefik.http.services.websocket.loadbalancer.server.port=9000
+      - traefik.http.routers.websocket-secure.tls.certresolver=cloudflare
+      - traefik.http.routers.websocket-secure.entrypoints=websecure
+      - traefik.http.routers.websocket-secure.rule=Host(`ws.fantacytype.top`)
   # fastapi:
   #   image: fastapi:v1.0
   #   container_name: fastapi_api
