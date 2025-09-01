@@ -1,0 +1,20 @@
+#!/bin/bash
+
+
+SESSION_NAME="elevenfingers"
+BASE_DIR="$HOME/elevenfingers"
+
+
+tmux new-session -d -s $SESSION_NAME -n "fastapi" -c "$BASE_DIR/backend"
+
+tmux new-window -t $SESSION_NAME -n "websocket" -c "$BASE_DIR/websocket"
+
+tmux new-window -t $SESSION_NAME -n "svelte" -c "$BASE_DIR/frontend"
+
+
+tmux send-keys -t $SESSION_NAME:fastapi "source venv/bin/activate" Enter
+
+
+tmux select-window -t $SESSION_NAME:fastapi
+
+tmux attach-session -t $SESSION_NAME

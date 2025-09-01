@@ -1,0 +1,221 @@
+<script lang="ts">
+  import { onMount, tick, createEventDispatcher } from 'svelte';
+  import { goto } from '$app/navigation';
+  
+  export let gameData: {
+    text: string,
+    StartTime: string,
+    IsActive: string
+  };
+  export let onWordComplete: (word: string) => void;
+  
+  // Add event dispatcher to communicate with parent
+  const dispatch = createEventDispatcher();
+  
+  let gameText = '';
+  let textArray: string[] = [];
+  let currentPosition = 0;
+  let typedText = '';
+  
+  let isActive = true;
+  let startTime: Date;
+  let currentWordStart = 0;
+  let wordsTyped = 0;
+  let accuracy = 100;
+  let correctChars = 0;
+  let totalChars = 0;
+  let errorState = false; // Flag to track if user is in error state
+  
+  // Progress tracking - from server only
+  let playerProgress: Record<string, number> = {};
+  let currentUserId = ''; // This would be set from localStorage or session
+  
+  // Player ranks tracking
+  let playerRanks: Record<string, number> = {};
+  
+  // Game end state
+  let gameEnded = false;
+  let gameResults: any = null;
+  let finalLeaderboard: Record<number, string> = {};
+  
+  $: if (gameData) {
+    gameText = gameData.text;
+    textArray = gameText.split('');
+    isActive = "TRUE";
+    startTime = new Date(gameData.StartTime);
+    currentPosition = 0;
+    typedText = '';
+    currentWordStart = 0;
+    wordsTyped = 0;
+    correctChars = 0;
+    totalChars = 0;
+    errorState = false;
+    gameEnded = false;
+    // Reset player ranks
+    playerRanks = {};
+    finalLeaderboard = {};
+  }
+  
+  $: if (totalChars > 0) {
+    accuracy = Math.round((correctChars / totalChars) * 100);
+  }
+  
+  async function handleKeydown(event: KeyboardEvent) {
+    if (!isActive || gameEnded) return;
+    
+    // Only process printable characters and special keys like backspace
+    if (event.key.length === 1 || event.key === 'Backspace') {
+      event.preventDefault();
+      
+      if (event.key === 'Backspace') {
+        if (currentPosition > 0) {
+          currentPosition--;
+          typedText = typedText.substring(0, currentPosition);
+          
+          // If we're backspacing out of an error state, clear it
+          if (errorState && currentPosition >= 0) {
+            // Check if we've backspaced to a correct state
+            if (currentPosition === 0 || typedText.substring(0, currentPosition) === gameText.substring(0, currentPosition)) {
+              errorState = false;
+            }
+          }
+        }
+      } else {
+        // If in error state, don't allow typing except backspace
+        if (errorState) {
+          return;
+        }
+        
+        // Regular character typed
+        const isCorrect = event.key === textArray[currentPosition];
+        
+        if (isCorrect) {
+          typedText = typedText + event.key;
+          currentPosition++;
+          
+          // Update statistics
+          totalChars++;
+          correctChars++;
+          
+          // Check if a word is completed (space or end of text)
+          if (event.key === ' ' || currentPosition === textArray.length) {
+            const completedWord = gameText.substring(currentWordStart, currentPosition).trim();
+            if (completedWord) {
+              onWordComplete(completedWord);
+              currentWordStart = currentPosition;
+              wordsTyped++;
+            }
+          }
+        } else {
+          // Incorrect character - enter error state
+          typedText = typedText + event.key;
+          currentPosition++;
+          errorState = true;
+          
+          // Update statistics
+          totalChars++;
+          // Don't increment correctChars
+        }
+      }
+      
+      await tick();
+    }
+  }
+  
+  onMount(() => {
+    window.addEventListener('keydown', handleKeydown);
+    
+    // Get username from localStorage if available
+    const username = localStorage.getItem('tenfinger_username');
+    if (username) {
+      currentUserId = username;
+    } else {
+      // Fallback to a random guest ID
+      currentUserId = `Guest_${Math.floor(Math.random() * 10000)}`;
+    }
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeydown);
+    };
+  });
+  
+  // Handle new websocket message for progress updates
+  export function updateProgress(userId: string, percentage: number) {
+    playerProgress[userId] = percentage;
+    playerProgress = {...playerProgress}; // Trigger reactivity
+  }
+  
+  // New function to handle player rank updates
+  export function updatePlayerRanks(ranks: Record<string, number>) {
+    playerRanks = {...playerRanks, ...ranks}; // Merge in new ranks
+  }
+  
+  // Handle game end signal
+  export function endGame(results = null) {
+    gameEnded = true;
+    gameResults = results;
+    
+    // Process leaderboard data if available
+    if (results && results.leaderboard) {
+      finalLeaderboard = results.leaderboard;
+    }
+    
+    isActive = false;
+  }
+  
+  function getCharClass(char: string, index: number) {
+    if (index >= typedText.length) {
+      return 'not-typed';
+    }
+    
+    return typedText[index] === char ? 'correct' : 'incorrect';
+  }
+  
+  // Get rank badge color based on position
+  function getRankBadgeColor(rank: number) {
+    switch(rank) {
+      case 1: return 'gold';
+      case 2: return 'silver';
+      case 3: return 'bronze';
+      default: return 'default';
+    }
+  }
+  
+  // Sort players by progress for the leaderboard
+  $: sortedPlayers = Object.entries(playerProgress)
+    .sort(([, progressA], [, progressB]) => progressB - progressA);
+    
+  // Get formatted leaderboard entries from final results
+  $: leaderboardEntries = Object.entries(finalLeaderboard)
+    .map(([rank, username]) => ({
+      rank: parseInt(rank),
+      username: username,
+      isCurrentUser: username === currentUserId
+    }))
+    .sort((a, b) => a.rank - b.rank);
+    
+  // Navigation functions
+  function goToMainMenu() {
+    goto('/');
+  }
+  
+  function playAgain() {
+    // Instead of redirecting, dispatch an event to tell parent component to go back to waiting
+    dispatch('playAgain');
+  }
+  
+  // Get player rank from the results
+  function getCurrentPlayerRank() {
+    // Find the player in the final leaderboard
+    for (const [rank, username] of Object.entries(finalLeaderboard)) {
+      if (username === currentUserId) {
+        return parseInt(rank);
+      }
+    }
+    
+    // Fallback to real-time rank or default
+    return playerRanks[currentUserId] || 
+      (sortedPlayers.findIndex(([playerId]) => playerId === currentUserId) + 1);
+  }
+</script>
+

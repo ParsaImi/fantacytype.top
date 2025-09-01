@@ -1,0 +1,792 @@
+<script lang="ts">
+  import { onMount, tick, createEventDispatcher } from 'svelte';
+  import { goto } from '$app/navigation';
+  
+  export let gameData: {
+    text: string,
+    StartTime: string,
+    IsActive: string
+  };
+  export let onWordComplete: (word: string) => void;
+  export let isRTL: boolean = false;
+  
+  // Add event dispatcher to communicate with parent
+  const dispatch = createEventDispatcher();
+  
+  let displayText = '';
+  let displayWords = [];
+  let gameText = '';
+  let textArray: string[] = [];
+  let currentPosition = 0;
+  let typedText = '';
+  
+  let isActive = true;
+  let startTime: Date;
+  let currentWordStart = 0;
+  let wordsTyped = 0;
+  let accuracy = 100;
+  let correctChars = 0;
+  let totalChars = 0;
+  let errorState = false; // Flag to track if user is in error state
+  
+  // Progress tracking - from server only
+  let playerProgress: Record<string, number> = {};
+  let currentUserId = ''; // This would be set from localStorage or session
+  
+  // Player ranks tracking
+  let playerRanks: Record<string, number> = {};
+  
+  // Game end state
+  let gameEnded = false;
+  let gameResults: any = null;
+  let finalLeaderboard: Record<number, string> = {};
+  
+  $: if (gameData) {
+    gameText = "سیب خیار خیار موز";
+    textArray = gameText.split("");
+    if (isRTL) {
+    // For Persian, we need to properly format the text for display
+        displayText = gameText;
+        displayWords = displayText.split(' ').map(word => word.trim()).filter(word => word.length > 0);
+    } else {
+        displayText = gameText;
+        displayWords = [];
+    }
+    isActive = "TRUE";
+    startTime = new Date(gameData.StartTime);
+    currentPosition = 0;
+    typedText = '';
+    currentWordStart = 0;
+    wordsTyped = 0;
+    correctChars = 0;
+    totalChars = 0;
+    errorState = false;
+    gameEnded = false;
+    // Reset player ranks
+    playerRanks = {};
+    finalLeaderboard = {};
+  }
+  
+  $: if (totalChars > 0) {
+    accuracy = Math.round((correctChars / totalChars) * 100);
+  }
+  
+
+
+async function handleKeydown(event: KeyboardEvent) {
+  if (!isActive || gameEnded) return;
+  
+  // Only process printable characters and special keys like backspace
+  if (event.key.length === 1 || event.key === 'Backspace') {
+    event.preventDefault();
+    
+    if (event.key === 'Backspace') {
+      // Backspace handling remains the same
+      if (currentPosition > 0) {
+        currentPosition--;
+        typedText = typedText.substring(0, currentPosition);
+        
+        if (errorState && currentPosition >= 0) {
+          if (currentPosition === 0 || typedText.substring(0, currentPosition) === gameText.substring(0, currentPosition)) {
+            errorState = false;
+          }
+        }
+      }
+    } else {
+      // If in error state, don't allow typing except backspace
+      if (errorState) {
+        return;
+      }
+      
+      // Regular character typed
+      const isCorrect = event.key === textArray[currentPosition];
+      
+      if (isCorrect) {
+        typedText = typedText + event.key;
+        currentPosition++;
+        
+        // Update statistics
+        totalChars++;
+        correctChars++;
+        
+        // Check if a word is completed (space or end of text)
+        // For Persian, we need to consider zero-width non-joiner and other special characters
+        if (event.key === ' ' || currentPosition === textArray.length) {
+          const completedWord = gameText.substring(currentWordStart, currentPosition).trim();
+          if (completedWord) {
+            onWordComplete(completedWord);
+            currentWordStart = currentPosition;
+            wordsTyped++;
+          }
+        }
+      } else {
+        // Incorrect character - enter error state
+        typedText = typedText + event.key;
+        currentPosition++;
+        errorState = true;
+        
+        // Update statistics
+        totalChars++;
+        // Don't increment correctChars
+      }
+    }
+    
+    await tick();
+  }
+}
+    
+  onMount(() => {
+    window.addEventListener('keydown', handleKeydown);
+    
+    // Get username from localStorage if available
+    const username = localStorage.getItem('tenfinger_username');
+    if (username) {
+      currentUserId = username;
+    } else {
+      // Fallback to a random guest ID
+      currentUserId = `Guest_${Math.floor(Math.random() * 10000)}`;
+    }
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeydown);
+    };
+  });
+  
+  // Handle new websocket message for progress updates
+  export function updateProgress(userId: string, percentage: number) {
+    playerProgress[userId] = percentage;
+    playerProgress = {...playerProgress}; // Trigger reactivity
+  }
+  
+  // New function to handle player rank updates
+  export function updatePlayerRanks(ranks: Record<string, number>) {
+    playerRanks = {...playerRanks, ...ranks}; // Merge in new ranks
+  }
+  
+  // Handle game end signal
+  export function endGame(results = null) {
+    gameEnded = true;
+    gameResults = results;
+    
+    // Process leaderboard data if available
+    if (results && results.leaderboard) {
+      finalLeaderboard = results.leaderboard;
+    }
+    
+    isActive = false;
+  }
+  
+  function getCharClass(char: string, index: number) {
+    if (index >= typedText.length) {
+      return 'not-typed';
+    }
+    
+    return typedText[index] === char ? 'correct' : 'incorrect';
+  }
+  
+  // Get rank badge color based on position
+  function getRankBadgeColor(rank: number) {
+    switch(rank) {
+      case 1: return 'gold';
+      case 2: return 'silver';
+      case 3: return 'bronze';
+      default: return 'default';
+    }
+  }
+  
+  // Sort players by progress for the leaderboard
+  $: sortedPlayers = Object.entries(playerProgress)
+    .sort(([, progressA], [, progressB]) => progressB - progressA);
+    
+  // Get formatted leaderboard entries from final results
+  $: leaderboardEntries = Object.entries(finalLeaderboard)
+    .map(([rank, username]) => ({
+      rank: parseInt(rank),
+      username: username,
+      isCurrentUser: username === currentUserId
+    }))
+    .sort((a, b) => a.rank - b.rank);
+    
+  // Navigation functions
+  function goToMainMenu() {
+    goto('/');
+  }
+  
+  function playAgain() {
+    // Instead of redirecting, dispatch an event to tell parent component to go back to waiting
+    dispatch('playAgain');
+  }
+  
+  // Get player rank from the results
+  function getCurrentPlayerRank() {
+    // Find the player in the final leaderboard
+    for (const [rank, username] of Object.entries(finalLeaderboard)) {
+      if (username === currentUserId) {
+        return parseInt(rank);
+      }
+    }
+    
+    // Fallback to real-time rank or default
+    return playerRanks[currentUserId] || 
+      (sortedPlayers.findIndex(([playerId]) => playerId === currentUserId) + 1);
+  }
+ function logging(){
+    console.log(gameText)
+    console.log(textArray)
+ }
+ const mylogger = setTimeout(logging , 5000)
+
+
+ // Helper functions for Persian text display
+function getGlobalCharIndex(wordIndex, charIndex) {
+  let index = 0;
+  for (let i = 0; i < wordIndex; i++) {
+    index += displayWords[i].length + 1; // +1 for space
+  }
+  return index + charIndex;
+}
+
+function getSpaceIndexAfterWord(wordIndex) {
+  let index = 0;
+  for (let i = 0; i <= wordIndex; i++) {
+    index += displayWords[i].length;
+    if (i < wordIndex) index += 1; // +1 for space
+  }
+  return index;
+}
+</script>
+
+<div class="game-container">
+  <h2>Typing Game {isRTL ? '(Persian)' : ''}</h2>
+  
+  {#if gameEnded}
+    <div class="game-end-popup">
+      <div class="popup-content">
+        <h3>Game Ended</h3>
+        
+        <div class="results">
+          <p>Your final score:</p>
+          <ul>
+            <li>Words typed: {wordsTyped}</li>
+            <li>Accuracy: {accuracy}%</li>
+            <li>Final position: {getCurrentPlayerRank()} of {Object.keys(finalLeaderboard).length || sortedPlayers.length}</li>
+          </ul>
+        </div>
+        
+        <!-- New final leaderboard display -->
+        <div class="final-leaderboard">
+          <h4>Final Leaderboard</h4>
+          <table>
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Player</th>
+              </tr>
+            </thead>
+            <tbody>
+              {#if leaderboardEntries.length > 0}
+                {#each leaderboardEntries as entry}
+                  <tr class={entry.isCurrentUser ? 'current-user' : ''}>
+                    <td>
+                      <div class="rank-badge rank-{getRankBadgeColor(entry.rank)}">
+                        #{entry.rank}
+                      </div>
+                    </td>
+                    <td>{entry.username} {entry.isCurrentUser ? '(You)' : ''}</td>
+                  </tr>
+                {/each}
+              {:else}
+                {#each sortedPlayers as [playerId, progress], index}
+                  <tr class={playerId === currentUserId ? 'current-user' : ''}>
+                    <td>
+                      <div class="rank-badge rank-{getRankBadgeColor(index + 1)}">
+                        #{index + 1}
+                      </div>
+                    </td>
+                    <td>{playerId} {playerId === currentUserId ? '(You)' : ''}</td>
+                  </tr>
+                {/each}
+              {/if}
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="popup-buttons">
+          <button class="btn-main" on:click={goToMainMenu}>Main Menu</button>
+          <button class="btn-play" on:click={playAgain}>Play Again</button>
+        </div>
+      </div>
+    </div>
+  {/if}
+  
+  {#if isActive && !gameEnded}
+    <div class="stats">
+      <div class="stat">
+        <span class="label">Words:</span>
+        <span class="value">{wordsTyped}</span>
+      </div>
+      <div class="stat">
+        <span class="label">Accuracy:</span>
+        <span class="value">{accuracy}%</span>
+      </div>
+      <div class="stat">
+        <span class="label">Progress:</span>
+        <span class="value">{playerProgress[currentUserId] || 0}%</span>
+      </div>
+      {#if playerRanks[currentUserId]}
+        <div class="stat">
+          <span class="label">Rank:</span>
+          <span class="value">{playerRanks[currentUserId]}</span>
+        </div>
+      {/if}
+    </div>
+    
+    <!-- Error state notification -->
+    {#if errorState}
+      <div class="error-message">
+        Typo detected! Press backspace to correct the error.
+      </div>
+    {/if}
+    
+    <!-- Progress race track - based entirely on server data -->
+    <div class="progress-race">
+      <h3>Race Progress</h3>
+      <div class="progress-container">
+        {#each sortedPlayers as [playerId, progress]}
+          <div class="player-progress">
+            <div class="player-name">{playerId === currentUserId ? `${playerId} (You)` : playerId}</div>
+            <div class="progress-bar-container">
+              <div class="progress-bar" style="width: {progress}%"></div>
+              <div class="progress-value">{progress}%</div>
+            </div>
+            {#if playerRanks[playerId]}
+              <div class="rank-badge rank-{getRankBadgeColor(playerRanks[playerId])}">
+                #{playerRanks[playerId]}
+              </div>
+            {/if}
+          </div>
+        {/each}
+      </div>
+    </div>
+    
+    <!-- Replace the text display section with this -->
+    <div class="text-display" class:error-state={errorState} class:rtl={isRTL} dir={isRTL ? 'rtl' : 'ltr'} tabindex="0">
+      {#if isRTL && displayWords.length > 0}
+        <!-- Persian text display mode - better word rendering -->
+        <div class="persian-text-container">
+          {#each displayWords as word, wordIndex}
+            <span class="persian-word">
+              {#each word.split('') as char, charIndex}
+                {@const globalIndex = getGlobalCharIndex(wordIndex, charIndex)}
+                <span 
+                  class={`char ${getCharClass(char, globalIndex)} ${globalIndex === currentPosition ? 'current' : ''}`}
+                >{char}</span>
+              {/each}
+            </span>
+            {#if wordIndex < displayWords.length - 1}
+              <span class="space-char"
+                  class:typed={getSpaceIndexAfterWord(wordIndex) < typedText.length}
+                  class:current={getSpaceIndexAfterWord(wordIndex) === currentPosition}> </span>
+            {/if}
+          {/each}
+        </div>
+      {:else}
+        <!-- Standard character-by-character display for non-RTL -->
+        {#each textArray as char, index}
+          <span 
+            class={`char ${getCharClass(char, index)} ${index === currentPosition ? 'current' : ''}`}
+          >{char}</span>
+        {/each}
+      {/if}
+    </div> 
+  {:else if !gameEnded}
+    <div class="waiting">
+      <p>Waiting for the game to start...</p>
+    </div>
+  {/if}
+</div>
+
+<style>
+  .game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem;
+    position: relative;
+  }
+  
+  h2 {
+    font-size: 2.5rem;
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+  
+  h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+  
+  h4 {
+    font-size: 1.2rem;
+    margin-bottom: 0.75rem;
+    text-align: center;
+  }
+  
+  .stats {
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+    max-width: 800px;
+    margin-bottom: 2rem;
+  }
+  
+  .stat {
+    padding: 0.5rem 1rem;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 100px;
+  }
+  
+  .label {
+    font-size: 0.8rem;
+    color: #666;
+  }
+  
+  .value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #333;
+  }
+  
+  .error-message {
+    background-color: #ffebee;
+    color: #d32f2f;
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    font-weight: bold;
+    border-left: 4px solid #d32f2f;
+    animation: pulse 1.5s infinite;
+  }
+  
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+  
+  .progress-race {
+    width: 100%;
+    max-width: 800px;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .progress-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .player-progress {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .player-name {
+    flex: 0 0 120px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .progress-bar-container {
+    flex: 1;
+    height: 24px;
+    background-color: #e9ecef;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .progress-bar {
+    height: 100%;
+    background-color: #4a56e2;
+    border-radius: 12px;
+    transition: width 0.3s ease;
+  }
+  
+  .progress-value {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #fff;
+    text-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+  }
+  
+  /* Rank badge styles */
+  .rank-badge {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    color: white;
+    font-weight: bold;
+    font-size: 0.8rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    margin-left: 8px;
+    flex-shrink: 0;
+  }
+  
+  .rank-gold {
+    background: linear-gradient(135deg, #f9d423 0%, #f83600 100%);
+  }
+  
+  .rank-silver {
+    background: linear-gradient(135deg, #e6e6e6 0%, #b3b3b3 100%);
+  }
+  
+  .rank-bronze {
+    background: linear-gradient(135deg, #cd7f32 0%, #a05a2c 100%);
+  }
+  
+  .rank-default {
+    background: #6c757d;
+  }
+  
+  .text-display {
+    width: 100%;
+    max-width: 800px;
+    min-height: 200px;
+    background-color: #f8f9fa;
+    padding: 2rem;
+    border-radius: 8px;
+    font-size: 1.5rem;
+    line-height: 2;
+    text-align: left;
+    font-family: Tahoma, Arial, sans-serif;
+    white-space: pre-wrap;
+    position: relative;
+    outline: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s;
+  }
+  
+  /* RTL text styling */
+  .text-display.rtl {
+    direction: rtl;
+    text-align: right;
+    font-family: 'Vazirmatn', Tahoma, Arial, sans-serif;
+  }
+  
+  .text-display.error-state {
+    background-color: #fff8f8;
+    box-shadow: 0 0 0 2px #ffcdd2, 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .char {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .current {
+    position: relative;
+  }
+  
+  .current::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 2px;
+    width: 100%;
+    background-color: #4a56e2;
+    animation: blink 1s infinite;
+  }
+  
+  .correct {
+    color: #2ecc71;
+  }
+  
+  .incorrect {
+    color: #e74c3c;
+    text-decoration: underline;
+  }
+  
+  .not-typed {
+    color: #333;
+  }
+  
+  .waiting {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    max-width: 800px;
+    min-height: 200px;
+    background-color: #f8f9fa;
+    padding: 2rem;
+    border-radius: 8px;
+    font-size: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Game End Popup Styles */
+  .game-end-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  .popup-content {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 500px;
+    text-align: center;
+    animation: scaleIn 0.3s ease;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  
+  @keyframes scaleIn {
+    from { transform: scale(0.9); }
+    to { transform: scale(1); }
+  }
+  
+  .popup-content h3 {
+    color: #333;
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .results {
+    margin-bottom: 1.5rem;
+    text-align: left;
+    background-color: #f9f9f9;
+    padding: 1.5rem;
+    border-radius: 8px;
+  }
+  
+  .results p {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  
+  .results ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .results li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .results li:last-child {
+    border-bottom: none;
+  }
+  
+  /* Final Leaderboard Styles */
+  .final-leaderboard {
+    margin-bottom: 1.5rem;
+    background-color: #f9f9f9;
+    padding: 1.5rem;
+    border-radius: 8px;
+  }
+  
+  .final-leaderboard table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0.5rem;
+  }
+  
+  .final-leaderboard th {
+    text-align: left;
+    padding: 0.5rem;
+    border-bottom: 2px solid #ddd;
+    font-weight: 600;
+  }
+  
+  .final-leaderboard td {
+    padding: 0.75rem 0.5rem;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .final-leaderboard tr.current-user {
+    background-color: #e8f4fd;
+    font-weight: 600;
+  }
+  
+  .final-leaderboard tr:last-child td {
+    border-bottom: none;
+  }
+  
+  .popup-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+  
+  .btn-main, .btn-play {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .btn-main {
+    background-color: #f5f5f5;
+    color: #333;
+  }
+  
+  .btn-main:hover {
+    background-color: #e0e0e0;
+  }
+  
+  .btn-play {
+    background-color: #4a56e2;
+    color: white;
+  }
+  
+  .btn-play:hover {
+    background-color: #3643cf;
+  }
+  
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+</style>

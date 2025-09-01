@@ -1,0 +1,95 @@
+services:
+  watchtower:
+    image: containrrr/watchtower
+    command:
+      - "--label-enable"
+      - "--interval"
+      - "30"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+  traefik:
+    image: traefik:v3.5
+    container_name: traefik-demo
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    environment:
+      - CLOUDFLARE_DNS_API_TOKEN=8XSAiSTrXd4TegBpBKXiFokBPg9zPWqj5nnHJWjJ
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./config/traefik.yaml:/etc/traefik/traefik.yaml:ro
+      - ./data/certs/:/var/traefik/certs/:rw
+    networks:
+      - frontend
+    restart: unless-stopped
+  # nginx:
+  #   image: nginx:latest
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./data/nginx:/etc/nginx/conf.d
+  #     - ./data/certbot/conf:/etc/letsencrypt
+  #     - ./data/certbot/www:/var/www/certbot
+  #   depends_on:
+  #     - webapp
+  #   networks:
+  #     - app-network
+  #   restart: always
+  #   command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+  #
+  # certbot:
+  #    image: certbot/certbot:latest
+  #    volumes:
+  #      - ./data/certbot/conf:/etc/letsencrypt
+  #      - ./data/certbot/www:/var/www/certbot
+  #    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+  #    restart: always
+  #
+  webapp:
+    image: svelte:v3.0
+    pull_policy: never
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    expose:
+      - "5173"
+    networks:
+      - frontend 
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.webapp-http.rule=Host(`fantacytype.top`)
+      - traefik.http.routers.webapp-http.entrypoints=web
+      - traefik.http.routers.webapp-https.tls=true
+      - traefik.http.routers.webapp-https.tls.certresolver=cloudflare
+      - traefik.http.routers.webapp-https.entrypoints=websecure
+      - traefik.http.routers.webapp-https.rule=Host(`fantacytype.top`)
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # websocket:
+  #   image: websocket:v1.0
+  #   container_name: websocket_server
+  #   pull_policy: never
+  #   ports:
+  #     - "9000:9000"
+  #   environment:
+  #     - PORT=9000
+  #     # Add any other environment variables your app needs
+  #   restart: unless-stopped
+  #   # If you need to connect to other services like a database, add them here
+  #   networks:
+  #     - frontend 
+  # fastapi:
+  #   image: fastapi:v1.0
+  #   container_name: fastapi_api
+  #   pull_policy: never
+  #   ports:
+  #     - "8000:8000"
+  #   networks:
+  #     - frontend 
+networks:
+  app-network:
+    driver: bridge
+  frontend:
+    driver: bridge
