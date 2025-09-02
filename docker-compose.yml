@@ -112,4 +112,4 @@ services:
       - traefik.http.routers.fastapi-https.rule=Host(`api.fantacytype.top`)
 networks:
     frontend:
-    driver: bridge
+      driver: bridge
