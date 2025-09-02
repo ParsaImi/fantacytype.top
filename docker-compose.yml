@@ -58,14 +58,17 @@ services:
     networks:
       - frontend
     labels:
-      - traefik.enable=true
-      - traefik.http.routers.webapp-http.rule=Host(`fantacytype.top`)
-      - traefik.http.routers.webapp-http.entrypoints=web
-      - traefik.http.routers.webapp-https.tls=true
-      - traefik.http.routers.webapp-https.tls.certresolver=cloudflare
-      - traefik.http.routers.webapp-https.entrypoints=websecure
-      - traefik.http.routers.webapp-https.rule=Host(`fantacytype.top`)
-      - "com.centurylinklabs.watchtower.enable=true"
+      - "traefik.enable=true"
+      - "traefik.http.routers.webapp-http.rule=Host(`fantacytype.top`)"
+      - "traefik.http.routers.webapp-http.entrypoints=web"
+      - "traefik.http.routers.webapp-http.service=webapp-service"
+      - "traefik.http.routers.webapp-https.rule=Host(`fantacytype.top`)"
+      - "traefik.http.routers.webapp-https.entrypoints=websecure"
+      - "traefik.http.routers.webapp-https.service=webapp-service"
+      - "traefik.http.routers.webapp-https.tls=true"
+      - "traefik.http.routers.webapp-https.tls.certresolver=cloudflare"
+      - "traefik.http.services.webapp-service.loadbalancer.server.port=5173"
+      - "com.centurylinklabs.watchtower.enable=true" 
 
   websocket:
     image: websocket:v1.0
@@ -102,12 +105,11 @@ services:
       - traefik.http.routers.fastapi.service=fastapi-service
       - traefik.http.routers.fastapi.entrypoints=web
       - traefik.http.routers.fastapi-https.tls=true
+      - traefik.http.routers.fastapi-https.service=fastapi-service
       - traefik.http.services.fastapi-service.loadbalancer.server.port=8000
       - traefik.http.routers.fastapi-https.tls.certresolver=cloudflare
       - traefik.http.routers.fastapi-https.entrypoints=websecure
       - traefik.http.routers.fastapi-https.rule=Host(`api.fantacytype.top`)
 networks:
-  app-network:
-    driver: bridge
-  frontend:
+    frontend:
     driver: bridge
