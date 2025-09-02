@@ -86,6 +86,7 @@ services:
       - traefik.http.routers.websocket.service=websocket-service
       - traefik.http.routers.websocket.entrypoints=web
       - traefik.http.routers.websocket-secure.tls=true
+      - traefik.http.routers.websocket-secure.service=websocket-service
       - traefik.http.services.websocket-service.loadbalancer.server.port=9000
       - traefik.http.routers.websocket-secure.tls.certresolver=cloudflare
       - traefik.http.routers.websocket-secure.entrypoints=websecure
