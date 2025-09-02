@@ -56,7 +56,7 @@ services:
     expose:
       - "5173"
     networks:
-      - frontend 
+      - frontend
     labels:
       - traefik.enable=true
       - traefik.http.routers.webapp-http.rule=Host(`fantacytype.top`)
@@ -79,7 +79,7 @@ services:
     restart: unless-stopped
     # If you need to connect to other services like a database, add them here
     networks:
-      - frontend 
+      - frontend
     labels:
       - traefik.enable=true
       - traefik.http.routers.websocket.rule=Host(`ws.fantacytype.top`)
@@ -97,7 +97,7 @@ services:
     expose:
       - "8000"
     networks:
-      - frontend 
+      - frontend
     labels:
       - traefik.enable=true
       - traefik.http.routers.fastapi.rule=Host(`api.fantacytype.top`)
