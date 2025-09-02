@@ -40,7 +40,7 @@
     } 
     
     // Connect to WebSocket server
-    ws = new WebSocket('ws://ws.fantacytype.top:9000/ws');
+    ws = new WebSocket('wss://ws.fantacytype.top/ws');
     
     ws.onopen = () => {
       console.log('Connected to the server');

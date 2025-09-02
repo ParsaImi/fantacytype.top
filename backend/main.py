@@ -18,7 +18,7 @@ load_dotenv()
 origins = [
     "http://localhost",
     "http://localhost:5173",
-    "http://fantacytype.top:5173",
+    "https://fantacytype.top",
 ]
 
 app.add_middleware(
