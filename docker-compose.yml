@@ -71,9 +71,6 @@ services:
     image: websocket:v1.0
     container_name: websocket_server
     pull_policy: never
-    environment:
-      - PORT=9000
-      # Add any other environment variables your app needs
     expose:
       - "9000"
     restart: unless-stopped
