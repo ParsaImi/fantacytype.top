@@ -30,7 +30,7 @@ func GenerateCompetitionText(room, language string) (string, []string ) {
 		"script", "devoted", "prepositions", "indie", "fascinating", "courage", "Star", "Five", "outside",
 	}
 	
-	baseurl := "https://api.fantacytype.top/corpus/sentence"
+	baseurl := "https://auth.fantacytype.top/corpus/sentence"
 
 	u , _ := url.Parse(baseurl)
 

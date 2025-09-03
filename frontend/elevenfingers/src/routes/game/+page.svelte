@@ -53,7 +53,7 @@
     isPersianRoom = selectedRoom === 'room3';
     
     // Connect to WebSocket server
-    ws = new WebSocket('wss://ws.fantacytype.top/ws'); // Replace with your actual WebSocket URL
+    ws = new WebSocket('wss://wss.fantacytype.top/ws'); // Replace with your actual WebSocket URL
     
     ws.onopen = () => {
       console.log('Connected to the server');
