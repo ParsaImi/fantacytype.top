@@ -59,10 +59,10 @@ services:
       - frontend
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.webapp-http.rule=Host(`game.fantacytype.top`)"
+      - "traefik.http.routers.webapp-http.rule=Host(`fantacytype.top`)"
       - "traefik.http.routers.webapp-http.entrypoints=web"
       - "traefik.http.routers.webapp-http.service=webapp-service"
-      - "traefik.http.routers.webapp-https.rule=Host(`game.fantacytype.top`)"
+      - "traefik.http.routers.webapp-https.rule=Host(`fantacytype.top`)"
       - "traefik.http.routers.webapp-https.entrypoints=websecure"
       - "traefik.http.routers.webapp-https.service=webapp-service"
       - "traefik.http.routers.webapp-https.tls=true"
@@ -81,7 +81,7 @@ services:
       - frontend
     labels:
       - traefik.enable=true
-      - traefik.http.routers.websocket.rule=Host(`wss.fantacytype.top`)
+      - traefik.http.routers.websocket.rule=Host(`ws.fantacytype.top`)
       - traefik.http.routers.websocket.service=websocket-service
       - traefik.http.routers.websocket.entrypoints=web
       - traefik.http.routers.websocket-secure.tls=true
@@ -89,7 +89,7 @@ services:
       - traefik.http.services.websocket-service.loadbalancer.server.port=9000
       - traefik.http.routers.websocket-secure.tls.certresolver=cloudflare
       - traefik.http.routers.websocket-secure.entrypoints=websecure
-      - traefik.http.routers.websocket-secure.rule=Host(`wss.fantacytype.top`)
+      - traefik.http.routers.websocket-secure.rule=Host(`ws.fantacytype.top`)
   fastapi:
     image: fastapi:v5.0
     container_name: fastapi_api
@@ -100,7 +100,7 @@ services:
       - frontend
     labels:
       - traefik.enable=true
-      - traefik.http.routers.fastapi.rule=Host(`auth.fantacytype.top`)
+      - traefik.http.routers.fastapi.rule=Host(`api.fantacytype.top`)
       - traefik.http.routers.fastapi.service=fastapi-service
       - traefik.http.routers.fastapi.entrypoints=web
       - traefik.http.routers.fastapi-https.tls=true
@@ -108,7 +108,7 @@ services:
       - traefik.http.services.fastapi-service.loadbalancer.server.port=8000
       - traefik.http.routers.fastapi-https.tls.certresolver=cloudflare
       - traefik.http.routers.fastapi-https.entrypoints=websecure
-      - traefik.http.routers.fastapi-https.rule=Host(`auth.fantacytype.top`)
+      - traefik.http.routers.fastapi-https.rule=Host(`api.fantacytype.top`)
 networks:
     frontend:
       driver: bridge

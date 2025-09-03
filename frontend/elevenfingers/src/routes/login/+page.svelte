@@ -31,7 +31,7 @@
     // Set loading state
     isLoading = true;
     try {
-      const response = await fetch('https://auth.fantacytype.top/auth/login', {
+      const response = await fetch('https://api.fantacytype.top/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'

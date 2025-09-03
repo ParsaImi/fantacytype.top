@@ -48,7 +48,7 @@
     isLoading = true;
     
     try {
-      const response = await fetch('https://auth.fantacytype.top/auth/signup', {
+      const response = await fetch('https://api.fantacytype.top/auth/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
