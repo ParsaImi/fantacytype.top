@@ -41,7 +41,7 @@ func verifyTokenWithFastAPI(token string) (*AuthResponse, error) {
 		return nil, err
 	}
 	resp, err := http.Post(
-		"http://160.191.77.176:8000/auth/verify",
+		"https://api.fantacytype.top/auth/verify",
 		"application/json",
 		bytes.NewBuffer(jsonData),
 	)
