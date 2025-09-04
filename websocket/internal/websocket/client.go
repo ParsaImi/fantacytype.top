@@ -456,9 +456,6 @@ func (c *Client) userCred(messageContent json.RawMessage) {
 			fmt.Println("SOMTHING GOES WRONG WITH verifyTokenWithFastAPI")
 		}
 		fmt.Println("YOOOOOOOYOYOYOYOYOYOYOY")
-		fmt.Println(userData.Id)
-		fmt.Println(userData.UserName)
-		fmt.Println(userData.Verify)
 		c.Username = userData.UserName
 	} else {
 		c.Username = auth.Username
