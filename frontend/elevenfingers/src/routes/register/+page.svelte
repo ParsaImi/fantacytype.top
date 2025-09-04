@@ -88,8 +88,8 @@
 </script>
 
 <svelte:head>
-  <title>Sign Up - Tenfinger Typing Game</title>
-  <meta name="description" content="Create your Tenfinger typing game account" />
+  <title>Sign Up - FantacyType</title>
+  <meta name="description" content="Create your FantacyType account" />
 </svelte:head>
 
 <div class="container">

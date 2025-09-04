@@ -31,7 +31,7 @@
   <header>
     <nav>
       <div class="logo">
-        <a href="/">Tenfinger</a>
+        <a href="/">FantacyType</a>
       </div>
       <div class="nav-links">
         <a href="/">Home</a>
@@ -59,7 +59,7 @@
   </main>
 
   <footer>
-    <p>© {new Date().getFullYear()} Tenfinger Typing Competition</p>
+    <p>© {new Date().getFullYear()} created by <a href="https://github.com/ParsaImi">ParsaImani</a></p>
   </footer>
 </div>
 

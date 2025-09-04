@@ -27,14 +27,14 @@
 </script>
 
 <svelte:head>
-  <title>Tenfinger Typing Game</title>
+  <title>FantacyType Turn Typing into Playtime</title>
   <meta name="description" content="Multiplayer typing game" />
 </svelte:head>
 
 <div class="container">
   <div class="hero">
-    <h1>Tenfinger Typing Game</h1>
-    <p class="subtitle">Compete with players from around the world in real-time typing challenges</p>
+    <h1>Turn Typing into Playtime</h1>
+    <p class="subtitle">Compete with players from around the world in real-time typing challenges in English or Persian</p>
     
     <div class="cta-buttons">
       <button class="btn-play" on:click={startGame}>Start Game</button>

@@ -176,7 +176,7 @@
 </script>
 
 <svelte:head>
-  <title>Tenfinger Typing Game - {selectedRoom} Room</title>
+  <title>FantacyType - {selectedRoom} Room</title>
   <meta name="description" content="Multiplayer typing game" />
 </svelte:head>
 

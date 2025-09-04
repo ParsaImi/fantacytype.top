@@ -74,8 +74,8 @@
 </script>
 
 <svelte:head>
-  <title>Login - Tenfinger Typing Game</title>
-  <meta name="description" content="Login to your Tenfinger typing game account" />
+  <title>Login - FantacyType</title>
+  <meta name="description" content="Login to your FantacyType account" />
 </svelte:head>
 
 <div class="container">

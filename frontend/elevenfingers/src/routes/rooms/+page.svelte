@@ -113,7 +113,7 @@
 </script>
 
 <svelte:head>
-  <title>Available Rooms - Tenfinger Typing Game</title>
+  <title>Available Rooms - FantacyType</title>
   <meta name="description" content="Join a multiplayer typing game room" />
 </svelte:head>
 
