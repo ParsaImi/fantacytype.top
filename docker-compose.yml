@@ -48,7 +48,7 @@ services:
   #    restart: always
   #
   webapp:
-    image: svelte:v7.0
+    image: svelte:v9.0
     pull_policy: never
     restart: unless-stopped
     environment:
@@ -70,7 +70,7 @@ services:
       - "traefik.http.services.webapp-service.loadbalancer.server.port=5173"
       - "com.centurylinklabs.watchtower.enable=true" 
   websocket:
-    image: websocket:v2.0
+    image: websocket:v10.0
     container_name: websocket_server
     pull_policy: never
     expose:
@@ -91,7 +91,7 @@ services:
       - traefik.http.routers.websocket-secure.entrypoints=websecure
       - traefik.http.routers.websocket-secure.rule=Host(`ws.fantacytype.top`)
   fastapi:
-    image: fastapi:v5.0
+    image: fastapi:v4.0
     container_name: fastapi_api
     pull_policy: never
     expose:

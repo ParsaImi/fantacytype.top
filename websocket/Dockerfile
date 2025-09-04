@@ -20,7 +20,7 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o websocket-app ./cmd/main.go
 
 # Create a minimal production image
-FROM alpine:latest
+FROM alpine:latest AS runner
 
 # Install CA certificates for HTTPS
 RUN apk --no-cache add ca-certificates
