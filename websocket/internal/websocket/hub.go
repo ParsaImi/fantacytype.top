@@ -28,9 +28,9 @@ type Hub struct {
 
 func NewHub(apiURL string) *Hub{
 	rooms := make(map[string]map[string]*Client)
-	rooms["room1"] = make(map[string]*Client)
-	rooms["room2"] = make(map[string]*Client)
-	rooms["room3"] = make(map[string]*Client)
+	rooms["English"] = make(map[string]*Client)
+	rooms["English(2)"] = make(map[string]*Client)
+	rooms["Persian"] = make(map[string]*Client)
 	return &Hub{
 		Clients: make(map[string]*Client),
 		Rooms: rooms,
