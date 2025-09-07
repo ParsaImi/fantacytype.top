@@ -48,7 +48,7 @@ services:
   #    restart: always
   #
   webapp:
-    image: svelte:v9.0
+    image: svelte:v10.0
     pull_policy: never
     restart: unless-stopped
     environment:
@@ -70,7 +70,7 @@ services:
       - "traefik.http.services.webapp-service.loadbalancer.server.port=5173"
       - "com.centurylinklabs.watchtower.enable=true" 
   websocket:
-    image: websocket:v10.0
+    image: websocket:v11.0
     container_name: websocket_server
     pull_policy: never
     expose:
