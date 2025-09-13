@@ -1,8 +1,8 @@
 #!/bin/bash
 
 
-SESSION_NAME="elevenfingers"
-BASE_DIR="$HOME/elevenfingers"
+SESSION_NAME="fantacytype.top"
+BASE_DIR="$HOME/fantacytype.top"
 
 
 tmux new-session -d -s $SESSION_NAME -n "fastapi" -c "$BASE_DIR/backend"
