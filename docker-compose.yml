@@ -8,14 +8,14 @@ services:
   #   volumes:
   #     - /var/run/docker.sock:/var/run/docker.sock
   traefik:
-    image: traefik:v3.5
+    image: traefik
     container_name: traefik-demo
     ports:
       - "80:80"
       - "443:443"
       - "8080:8080"
     environment:
-      - CLOUDFLARE_DNS_API_TOKEN=8XSAiSTrXd4TegBpBKXiFokBPg9zPWqj5nnHJWjJ
+      - CLOUDFLARE_DNS_API_TOKEN=CiGCFILcdbGtpafd-746DZhWwikv6rjYom9N-ySN
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./config/traefik.yaml:/etc/traefik/traefik.yaml:ro
@@ -48,7 +48,7 @@ services:
   #    restart: always
   #
   webapp:
-    image: svelte:v10.0
+    image: svelte:v11.0
     pull_policy: never
     restart: unless-stopped
     environment:
@@ -70,7 +70,7 @@ services:
       - "traefik.http.services.webapp-service.loadbalancer.server.port=5173"
       - "com.centurylinklabs.watchtower.enable=true" 
   websocket:
-    image: websocket:v11.0
+    image: websocket:v12.0
     container_name: websocket_server
     pull_policy: never
     expose:
@@ -91,7 +91,7 @@ services:
       - traefik.http.routers.websocket-secure.entrypoints=websecure
       - traefik.http.routers.websocket-secure.rule=Host(`ws.fantacytype.top`)
   fastapi:
-    image: fastapi:v4.0
+    image: fastapi:v6.0
     container_name: fastapi_api
     pull_policy: never
     expose:
@@ -109,6 +109,23 @@ services:
       - traefik.http.routers.fastapi-https.tls.certresolver=cloudflare
       - traefik.http.routers.fastapi-https.entrypoints=websecure
       - traefik.http.routers.fastapi-https.rule=Host(`api.fantacytype.top`)
+
+  postgres:
+    image: postgres:16  # You can change the version as needed
+    container_name: postgres-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres # Replace with your desired username
+      POSTGRES_PASSWORD: postgres # Replace with a strong password
+      POSTGRES_DB: postgres # Replace with your database name
+    ports:
+      - "5432:5432"  # Maps host port 5432 to container port 5432
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data  # Persists data across container restarts
+
+
+    
+  
 networks:
     frontend:
       driver: bridge

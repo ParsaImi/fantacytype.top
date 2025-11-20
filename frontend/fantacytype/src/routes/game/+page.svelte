@@ -47,10 +47,10 @@
     
     
     // Get the selected room from localStorage
-    selectedRoom = localStorage.getItem('selected_room') || 'room1';
+    selectedRoom = localStorage.getItem('selected_room') || 'English';
     
     // Check if it's the Persian room
-    isPersianRoom = selectedRoom === 'room3';
+    isPersianRoom = selectedRoom === 'Persian';
     
     // Connect to WebSocket server
     ws = new WebSocket('wss://ws.fantacytype.top/ws'); // Replace with your actual WebSocket URL

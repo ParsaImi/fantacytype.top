@@ -251,7 +251,7 @@ func (c *Client) startNewGame() {
 	}
 
 	language := "en"
-	if c.Room == "room3" {
+	if c.Room == "Persian" {
 		language = "fa"
 	}
 

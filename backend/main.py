@@ -39,4 +39,4 @@ app.include_router(sentences.router)
 
 @app.get("/")
 async def root():
-    return {"message": "Hellow nig"}
+    return {"message": "Home Page"}
